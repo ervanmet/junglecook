@@ -1,10 +1,8 @@
-import { getCurrentUser, logoutUser } from "./auth.js";
+import { logoutUser } from "./auth.js";
 
 const header = document.querySelector("#header");
 
-export function loadHeader() {
-  const user = getCurrentUser();
-
+export function loadHeader(user) {
   header.innerHTML = `
         <nav class="main-nav">
 
@@ -18,12 +16,12 @@ export function loadHeader() {
                 ${
                   user
                     ? `
-                    <a href="#your-recipes">Your Recipes</a>
-                    <a href="#logout" id="logout-link">Logout</a>
-                `
+                        <a href="#your-recipes">Your Recipes</a>
+                        <a href="#logout" id="logout-link">Logout</a>
+                    `
                     : `
-                    <a href="#login">Login</a>
-                `
+                        <a href="#login">Login</a>
+                    `
                 }
             </div>
 
@@ -42,12 +40,15 @@ export function loadHeader() {
   const logoutLink = document.querySelector("#logout-link");
 
   if (logoutLink) {
-    logoutLink.addEventListener("click", function (event) {
+    logoutLink.addEventListener("click", async function (event) {
       event.preventDefault();
 
-      logoutUser();
-      window.location.hash = "home";
-      loadHeader();
+      try {
+        await logoutUser();
+        window.location.hash = "home";
+      } catch (error) {
+        alert(error.message);
+      }
     });
   }
 }

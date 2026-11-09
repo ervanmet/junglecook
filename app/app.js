@@ -1,5 +1,6 @@
 import { loadHeader } from "./header.js";
 import { loadFooter } from "./footer.js";
+
 import { Home } from "../pages/home.js";
 import { Login } from "../pages/login.js";
 import { Signup } from "../pages/signup.js";
@@ -13,8 +14,13 @@ import { createAccount, loginUser, getCurrentUser } from "./auth.js";
 
 const app = document.querySelector("#app");
 
+let currentUser = null;
+let authReady = false;
+
 function loadPage() {
-  loadHeader();
+  if (!authReady) return;
+
+  loadHeader(currentUser);
   loadFooter();
 
   const page = window.location.hash.substring(1);
@@ -32,7 +38,7 @@ function loadPage() {
   } else if (page === "signup") {
     app.innerHTML = Signup();
   } else if (page === "your-recipes") {
-    if (getCurrentUser()) {
+    if (currentUser) {
       app.innerHTML = YourRecipes();
     } else {
       window.location.hash = "login";
@@ -50,38 +56,41 @@ function setupForms() {
   const loginForm = document.querySelector("#login-form");
 
   if (loginForm) {
-    loginForm.addEventListener("submit", function (event) {
+    loginForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
       const email = document.querySelector("#login-email").value;
       const password = document.querySelector("#login-password").value;
 
-      if (loginUser(email, password)) {
+      try {
+        await loginUser(email, password);
         window.location.hash = "your-recipes";
-      } else {
-        alert("Incorrect email or password.");
+      } catch (error) {
+        alert(error.message);
       }
     });
   }
 
+  // SIGN UP
   const signupForm = document.querySelector("#signup-form");
 
   if (signupForm) {
-    signupForm.addEventListener("submit", function (event) {
+    signupForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const name = document.querySelector("#signup-name").value;
       const email = document.querySelector("#signup-email").value;
       const password = document.querySelector("#signup-password").value;
 
-      if (createAccount(name, email, password)) {
+      try {
+        await createAccount(email, password);
         window.location.hash = "your-recipes";
-      } else {
-        alert("An account with this email already exists.");
+      } catch (error) {
+        alert(error.message);
       }
     });
   }
 
+  // CREATE RECIPE
   const createRecipeForm = document.querySelector("#create-recipe-form");
 
   if (createRecipeForm) {
@@ -109,6 +118,7 @@ function setupForms() {
     });
   }
 
+  // VIEW YOUR RECIPES
   const viewButtons = document.querySelectorAll(".view-recipe-button");
 
   viewButtons.forEach((button) => {
@@ -122,6 +132,7 @@ function setupForms() {
     });
   });
 
+  // EDIT RECIPE
   const editRecipeForm = document.querySelector("#edit-recipe-form");
 
   if (editRecipeForm) {
@@ -150,6 +161,7 @@ function setupForms() {
     });
   }
 
+  // EDIT RECIPE BUTTON
   const editButton = document.querySelector("#edit-recipe-button");
 
   if (editButton) {
@@ -158,6 +170,7 @@ function setupForms() {
     });
   }
 
+  // DELETE RECIPE BUTTON
   const deleteButton = document.querySelector("#delete-recipe-button");
 
   if (deleteButton) {
@@ -182,8 +195,10 @@ function setupForms() {
     });
   }
 
+  // BROWSE RECIPE SEARCH
   const searchButton = document.querySelector("#recipe-search-button");
   const searchInput = document.querySelector("#recipe-search-input");
+
   const recipeCards = document.querySelectorAll(
     "#browse-recipe-grid .recipe-card",
   );
@@ -204,6 +219,7 @@ function setupForms() {
     });
   }
 
+  // BROWSE RECIPE BUTTONS
   const browseButtons = document.querySelectorAll(".browse-view-button");
 
   browseButtons.forEach((button) => {
@@ -218,6 +234,11 @@ function setupForms() {
   });
 }
 
-window.addEventListener("hashchange", loadPage);
+// CHECK FIREBASE LOGIN STATUS
+getCurrentUser(function (user) {
+  currentUser = user;
+  authReady = true;
+  loadPage();
+});
 
-loadPage();
+window.addEventListener("hashchange", loadPage);
